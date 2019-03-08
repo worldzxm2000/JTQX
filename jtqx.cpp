@@ -32,13 +32,23 @@ QString GetServiceTypeName()
 	return name;
 }
 
+//获取设备信息
+void GetFacilityInfo(uint Socket)
+{
+	QString Comm = "ID\r\n";
+	QByteArray ba = Comm.toLatin1();
+	LPCSTR ch = ba.data();
+	int len = Comm.length();
+	::send(Socket, ch, len, 0);
+}
+
 //解析数据
 LRESULT Char2Json(QString &buff, QJsonObject &json)
 {
 	int Count = 0;//数据个数
 	int Current_P = buff.length();//当前数据指
-								  
-    //遍历查找数据
+
+	//遍历查找数据
 	for (int i = 0; i < buff.length() - 2; i++)
 	{
 		if (buff[i].toUpper() == 'B' && buff[i + 1].toUpper() == 'G'&&buff[i + 2] == ',')
@@ -49,7 +59,6 @@ LRESULT Char2Json(QString &buff, QJsonObject &json)
 				if (buff[j] == ','&&buff[j + 1].toUpper() == 'E'&&buff[j + 2].toUpper() == 'D')
 				{
 					Current_P = j + 3;//指针移动到帧尾下一个字符
-
 					Dictionary dic;
 					QString strBuff = buff.mid(i, j - i + 3);
 					QStringList strlist = strBuff.split(",");
@@ -59,12 +68,12 @@ LRESULT Char2Json(QString &buff, QJsonObject &json)
 					SubJson.insert("StationID", strlist.at(1));
 					//02交通气象站
 					SubJson.insert("ServiceTypeID", JTQX);
-						//设备号
-						SubJson.insert("DeviceID", strlist.at(4));
+					//设备号
+					SubJson.insert("DeviceID", strlist.at(4));
 					//时间
 					QString time = Convert2Time(strlist.at(5));
 					SubJson.insert("ObserveTime", time);
-						//观察要素个数
+					//观察要素个数
 
 					int CountOfFeature = ((QString)strlist.at(7)).toInt();
 					SubJson.insert("CountOfFeature", CountOfFeature);
@@ -76,8 +85,8 @@ LRESULT Char2Json(QString &buff, QJsonObject &json)
 						j++;
 						continue;
 					}
-						Count += 1;//数据个数
-					//观察要素
+					Count += 1;//数据个数
+				//观察要素
 					QString strFeatureName;
 					//天气现象
 					QStringList WeatherList;
@@ -91,7 +100,7 @@ LRESULT Char2Json(QString &buff, QJsonObject &json)
 					{
 						QString SrcKey = QString(strlist.at(i)).toLower();
 						QString key = dic.Find(SrcKey);
-				
+
 						if (key != NULL)
 						{
 							//需要处理的数据 除以10
@@ -176,7 +185,8 @@ LRESULT Char2Json(QString &buff, QJsonObject &json)
 					fileName += "\\data.txt";
 					QFile file(fileName);
 					if (!file.open(QIODevice::WriteOnly | QIODevice::Text | QIODevice::Append))
-					{}
+					{
+					}
 					QTextStream in(&file);
 					in << current_date << "\r\n" << strBuff << "\r\n";
 					file.close();
@@ -198,13 +208,14 @@ LRESULT Char2Json(QString &buff, QJsonObject &json)
 					QString subStr = buff.mid(i + 1, j - i - 1);
 					QStringList strlist = subStr.split(" ");
 					QJsonObject SubJson;
-					
+
 					i = j;
 					switch (strlist.count())
 					{
 						//单个返回值
 					case 1:
-						{	SubJson.insert("DataType", 2);//数据类型 2操作数据
+					{
+						SubJson.insert("DataType", 2);//数据类型 2操作数据
 						SubJson.insert("ValueCount", 1);
 						SubJson.insert("RecvValue1", strlist.at(0));
 						json.insert(QString::number(Count), SubJson);
@@ -212,12 +223,12 @@ LRESULT Char2Json(QString &buff, QJsonObject &json)
 					}
 					//双返回值
 					case 2:
-						{	SubJson.insert("DataType", 2);//数据类型 2操作数据
-						SubJson.insert("ValueCount", 2);
-						SubJson.insert("RecvValue1", strlist.at(0));
-						SubJson.insert("RecvValue2", strlist.at(1));
-						json.insert(QString::number(Count), SubJson);
-						break;
+					{	SubJson.insert("DataType", 2);//数据类型 2操作数据
+					SubJson.insert("ValueCount", 2);
+					SubJson.insert("RecvValue1", strlist.at(0));
+					SubJson.insert("RecvValue2", strlist.at(1));
+					json.insert(QString::number(Count), SubJson);
+					break;
 					}
 					//无效数据
 					default:
@@ -261,6 +272,17 @@ void  GetControlWidget(QString StationID, uint Socket, QWidget* parent)
 	control_ui->isActive = &isActive;
 	control_ui->show();
 }
+
+//关闭窗体
+void CloseControlWindow()
+{
+	if (control_ui!=NULL)
+	{
+		if(isActive)
+			control_ui->close();
+	}
+	
+}
 //矫正时钟
 void SetTime(QString StationID, uint Socket)
 {
@@ -286,7 +308,7 @@ void SetCommand(uint Socket, int CommandType, QString Params1, QString Params2, 
 {
 	//设备终端命令
 	QString Comm;
-	
+
 	switch (CommandType)
 	{
 	case 201:
@@ -306,48 +328,46 @@ void SetCommand(uint Socket, int CommandType, QString Params1, QString Params2, 
 		//设置时钟
 		QDateTime nowtime = QDateTime::currentDateTime();
 		QString datetime = nowtime.toString("yyyy-MM-dd hh:mm:ss");
-		Comm = Comm = "DATETIME " + datetime + "\r\n";
+		Comm = "DATETIME " + datetime + "\r\n";
 	}
 	break;
 	case 205:
 		//读取高度
-		 Comm = "ALT\r\n";
+		Comm = "ALT\r\n";
 		break;
 	case 206:
-		
+
 		//设置高度
-		 Comm = "ALT " + Params1 + "\r\n";
+		Comm = "ALT " + Params1 + "\r\n";
 		break;
 	case 207:
 		//读取纬度
-		 Comm = "LAT\r\n";
+		Comm = "LAT\r\n";
 		break;
 	case 208:
 		//设置纬度
-		 Comm = "LAT " + Params1 + "\r\n";
+		Comm = "LAT " + Params1 + "\r\n";
 		break;
 	case 209:
 		//读取经度
-		 Comm = "LONG\r\n";
+		Comm = "LONG\r\n";
 		break;
 	case 210:
 		//设置经度
-		 Comm = "LONG " + Params1 + "\r\n";
+		Comm = "LONG " + Params1 + "\r\n";
 		break;
 	case 211:
 		//重启采集器
-		 Comm = "RESET\r\n";
+		Comm = "RESET\r\n";
 		break;
 	case 212:
 		//远程升级
-		 Comm = "UPDATE\r\n";
+		Comm = "UPDATE\r\n";
 		break;
 	case 213:
-	{
 		//补抄
-		QString Comm = "DMTD " + Params1 + " " + Params2 + "\r\n";
-	}
-	break;
+		Comm = "DMTD " + Params1 + " " + Params2 + "\r\n";
+		break;
 	default:
 		break;
 	}

@@ -23,6 +23,10 @@ EXTERN_C JTQXZSHARED_EXPORT QString GetServiceTypeName();
 EXTERN_C JTQXZSHARED_EXPORT QString GetVersionNo();
 //获取端口号
 EXTERN_C JTQXZSHARED_EXPORT int GetPort();
+//关闭窗体
+EXTERN_C JTQXZSHARED_EXPORT void CloseControlWindow();
+//获取设备信息
+EXTERN_C JTQXZSHARED_EXPORT void GetFacilityInfo(uint Socket);
 //调试窗体
 EXTERN_C JTQXZSHARED_EXPORT void GetControlWidget(QString StationID, uint Socket, QWidget *parent);
 //矫正时钟
